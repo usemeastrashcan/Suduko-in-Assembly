@@ -60,7 +60,7 @@ coutWelcome:
     mov si, [bp + 10]
     mov cx, [bp + 8]
     mov di, (15*80 + 2)*2
-    call coutLoop
+    call coutLoop 
 
     mov si, [bp + 6]
     mov cx, [bp + 4]
@@ -77,6 +77,77 @@ coutWelcome:
     
 
 playSound:
+    push ax
+    push bx
+    push cx
+
+
+    mov al, 10110110b           ;programable interval timer using channel 2 and mode 3
+    out 0x43, al               ;sent output command to port 0x43   
+    
+    mov bx, 1193180 / 440   ; A4 (440 Hz)
+    call beep
+
+    mov bx, 1193180 / 523   ; C5 (523 Hz)
+    call beep
+
+    mov bx, 1193180 / 349   ; F4 (349 Hz)
+    call beep
+
+    mov bx, 1193180 / 659   ; E5 (659 Hz)
+    call beep
+
+    mov bx, 1193180 / 392   ; G4 (392 Hz)
+    call beep
+
+    mov bx, 1193180 / 784   ; G5 (784 Hz)
+    call beep
+
+    mov bx, 1193180 / 261   ; C4 (261 Hz)
+    call beep
+
+    mov bx, 1193180 / 330   ; E4 (330 Hz)
+    call beep
+
+    mov bx, 1193180 / 988   ; B5 (988 Hz)
+    call beep
+
+    mov bx, 1193180 / 220   ; A3 (220 Hz)
+    call beep
+
+
+    pop cx
+    pop bx
+    pop ax
+    ret 
+
+beep:
+    push ax
+    push bx
+
+    mov al, bl
+    out 0x42, al
+    mov al, bh
+    out 0x42, al
+
+    in al, 0x61
+    or al, 00000011b            ;turn on speaker by sending signal to port 0x61
+    out 0x61, al                ;last 2 bits of keyboard controller port control speaker, so we make them 1
+
+    mov cx, 65535               ;delay to make sound audible
+    delayLoop:
+        loop delayLoop
+    
+    in al, 0x61
+    and al, 11111100b          ;turn off the speaker by turning bits of port 0x61 0
+    out 0x61, al
+
+    pop bx
+    pop ax
+    ret
+    
+
+playBeep:
     push ax
     push bx
     push cx
@@ -108,26 +179,6 @@ playSound:
     pop ax
     ret 
 
-    beep:
-        mov al, bl
-        out 0x42, al
-        mov al, bh
-        out 0x42, al
-
-        in al, 0x61
-        or al, 00000011b            ;turn on speaker by sending signal to port 0x61
-        out 0x61, al                ;last 2 bits of keyboard controller port control speaker, so we make them 1
-
-        mov cx, 65535               ;delay to make sound audible
-        delayLoop:
-            loop delayLoop
-        
-        in al, 0x61
-        and al, 11111100b          ;turn off the speaker by turning bits of port 0x61 0
-        out 0x61, al
-        ret
-    
-
 checkKeyPressed:
                             ; zf = 1 means no key pressed
     mov ah, 0x00
@@ -138,6 +189,17 @@ checkKeyPressed:
     ;otherwise jump to statr of game
 
     ret
+
+playBGMusic:
+    push cx
+    mov cx, 20
+    play:
+        call playSound
+    loop play
+
+    pop cx
+    ret
+
 
 
 
@@ -153,7 +215,7 @@ start:
     push ax
     push word [lengthh2]
 
-    call playSound
+    call playBGMusic
     call coutWelcome
 
     call checkKeyPressed
